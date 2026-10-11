@@ -391,29 +391,55 @@ function discoverModule(
 
 function resolveSymbol(
     module: PythonModule,
-    name: string
+    name: string,
+    modulesByPath: Map<string, PythonModule>,
+    visiting: Set<string> = new Set()
 ): SymbolReference {
+    const current = {
+        file: normalizePath(module.source.path),
+        name
+    };
+    const key = symbolKey(current);
+
+    if (visiting.has(key)) {
+        return current;
+    }
+
+    const nextVisiting = new Set(visiting);
+    nextVisiting.add(key);
     const [importName, ...members] = name.split(".");
     const imported = module.imports.get(importName);
 
-    if (imported?.isModule && members.length > 0) {
-        return {
-            file: imported.file,
-            name: members.join(".")
-        };
+    if (!imported) {
+        return current;
     }
 
-    if (imported && imported.name !== "*") {
-        return {
+    let target: SymbolReference;
+
+    if (imported.isModule) {
+        target = {
+            file: imported.file,
+            name: members.join(".") || "*"
+        };
+    } else {
+        target = {
             file: imported.file,
             name: [imported.name, ...members].join(".")
         };
     }
 
-    return {
-        file: normalizePath(module.source.path),
-        name
-    };
+    const targetModule = modulesByPath.get(
+        normalizePath(target.file)
+    );
+
+    return targetModule && target.name !== "*"
+        ? resolveSymbol(
+            targetModule,
+            target.name,
+            modulesByPath,
+            nextVisiting
+        )
+        : target;
 }
 
 function collectPrefixes(
@@ -487,8 +513,16 @@ export function discoverPythonContracts(
 
     for (const module of modules) {
         for (const mount of module.mounts) {
-            const parent = resolveSymbol(module, mount.owner);
-            const child = resolveSymbol(module, mount.target);
+            const parent = resolveSymbol(
+                module,
+                mount.owner,
+                modulesByPath
+            );
+            const child = resolveSymbol(
+                module,
+                mount.target,
+                modulesByPath
+            );
 
             const relation: MountRelation = {
                 parent,
@@ -517,7 +551,11 @@ export function discoverPythonContracts(
                 continue;
             }
 
-            const owner = resolveSymbol(module, ownerName);
+            const owner = resolveSymbol(
+                module,
+                ownerName,
+                modulesByPath
+            );
 
             const mountPrefixes = collectPrefixes(
                 owner,

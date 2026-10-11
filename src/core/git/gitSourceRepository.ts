@@ -8,6 +8,7 @@ import {
 import {
     SourceFileContent
 } from "../sourceFileLoader";
+import { isIgnoredSourcePath } from "../repositoryDiscovery";
 
 export class GitSourceRepository {
 
@@ -56,7 +57,7 @@ export class GitSourceRepository {
 
         return output
             .split(/\r?\n/)
-            .filter(Boolean)
+            .filter(path => path && !isIgnoredSourcePath(path))
             .map(path => {
 
                 const lowerPath =

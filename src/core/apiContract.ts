@@ -18,6 +18,9 @@ export interface ResponseField {
     type: string;
 }
 
+export const UNKNOWN_RESPONSE_FIELD_TYPE = "unknown";
+
 export interface ResponseContract {
     fields: ResponseField[];
+    fieldsComplete?: boolean;
 }

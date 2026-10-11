@@ -615,4 +615,78 @@ def get_users():
     }
 );
 
+    test(
+        "handles renamed source files in revision comparisons",
+        async function () {
+            this.timeout(10000);
+
+            const repositoryPath = mkdtempSync(
+                join(tmpdir(), "guardian-rename-")
+            );
+            const runGit = (args: string[]): string =>
+                execFileSync(
+                    "git",
+                    args,
+                    {
+                        cwd: repositoryPath,
+                        encoding: "utf-8"
+                    }
+                ).trim();
+
+            try {
+                runGit(["init"]);
+                runGit(["config", "user.email", "test@example.com"]);
+                runGit(["config", "user.name", "Guardian Test"]);
+                writeFileSync(
+                    join(repositoryPath, "server.ts"),
+                    'const app = express(); app.get("/health", (req, res) => res.json({ ok: true }));\n'
+                );
+                runGit(["add", "."]);
+                runGit(["commit", "-m", "add API"]);
+                const oldRevision = runGit(["rev-parse", "HEAD"]);
+
+                runGit(["mv", "server.ts", "renamed-server.ts"]);
+                runGit(["commit", "-m", "rename API file"]);
+                const newRevision = runGit(["rev-parse", "HEAD"]);
+
+                const service = new ContractComparisonService(
+                    repositoryPath,
+                    new ApiRevisionDiscovery(
+                        new GitSourceRepository(repositoryPath),
+                        new ApiDiscoveryService([
+                            new JavaScriptParser()
+                        ])
+                    )
+                );
+
+                const result = service.compare(
+                    oldRevision,
+                    newRevision
+                );
+
+                assert.deepStrictEqual(
+                    result.changes
+                        .map(({ path, type }) => ({ path, type }))
+                        .sort((left, right) => left.path.localeCompare(right.path)),
+                    [
+                        {
+                            path: "renamed-server.ts",
+                            type: "ADDED"
+                        },
+                        {
+                            path: "server.ts",
+                            type: "DELETED"
+                        }
+                    ]
+                );
+                assert.deepStrictEqual(result.breakingChanges, []);
+            } finally {
+                await rm(repositoryPath, {
+                    recursive: true,
+                    force: true
+                });
+            }
+        }
+    );
+
 });

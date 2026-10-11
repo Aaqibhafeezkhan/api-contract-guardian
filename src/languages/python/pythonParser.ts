@@ -1,7 +1,8 @@
 import {
     ApiContract,
     ResponseContract,
-    ResponseField
+    ResponseField,
+    UNKNOWN_RESPONSE_FIELD_TYPE
 } from "../../core/apiContract";
 import { LanguageParser } from "../../core/parser";
 import { SourceFileContent } from "../../core/sourceFileLoader";
@@ -122,13 +123,34 @@ export class PythonParser implements LanguageParser {
             }
 
             const fields: ResponseField[] = [];
+            const inlineFields = line.match(
+                /^\s*return\s+\{(.*)\}\s*,?\s*(?:#.*)?$/
+            );
 
+            if (inlineFields) {
+                return this.extractDictionaryFields(
+                    inlineFields[1].split(","),
+                    true
+                );
+            }
+
+            let fieldsComplete = true;
+            let dictionaryClosed = false;
             for (
                 let fieldIndex = index;
                 fieldIndex < lines.length;
                 fieldIndex++
             ) {
                 const fieldLine = lines[fieldIndex];
+
+                if (!fieldLine.trim() || /^\s*#/.test(fieldLine)) {
+                    continue;
+                }
+
+                if (/^\s*}\s*,?\s*(?:#.*)?$/.test(fieldLine)) {
+                    dictionaryClosed = true;
+                    break;
+                }
 
                 const fieldIndent =
                     fieldLine.match(/^\s*/)?.[0].length ?? 0;
@@ -141,32 +163,62 @@ export class PythonParser implements LanguageParser {
                     break;
                 }
 
-                const fieldMatch = fieldLine.match(
-                    /^\s*["']?([A-Za-z_]\w*)["']?\s*:\s*(.+?)\s*,?\s*$/
-                );
-
-                if (!fieldMatch) {
+                if (fieldIndex === index) {
                     continue;
                 }
 
-                const type = this.inferPythonType(
-                    fieldMatch[2]
-                );
+                const [field] = this.extractDictionaryFields(
+                    [fieldLine],
+                    false
+                ).fields;
 
-                if (!type) {
-                    continue;
+                if (field) {
+                    fields.push(field);
                 }
-
-                fields.push({
-                    name: fieldMatch[1],
-                    type
-                });
             }
 
-            return { fields };
+            return fieldsComplete && dictionaryClosed
+                ? { fields }
+                : { fields, fieldsComplete: false };
         }
 
         return undefined;
+    }
+
+    private extractDictionaryFields(
+        entries: string[],
+        fieldsComplete: boolean
+    ): ResponseContract {
+        const fields: ResponseField[] = [];
+        let complete = fieldsComplete;
+
+        for (const entry of entries) {
+            const trimmed = entry.trim();
+
+            if (!trimmed) {
+                continue;
+            }
+
+            const fieldMatch = trimmed.match(
+                /^["']?([A-Za-z_]\w*)["']?\s*:\s*(.+?)\s*$/
+            );
+
+            if (!fieldMatch) {
+                complete = false;
+                continue;
+            }
+
+            const type = this.inferPythonType(fieldMatch[2]);
+
+            fields.push({
+                name: fieldMatch[1],
+                type: type ?? UNKNOWN_RESPONSE_FIELD_TYPE
+            });
+        }
+
+        return complete
+            ? { fields }
+            : { fields, fieldsComplete: false };
     }
 
     private inferPythonType(value: string): string | undefined {

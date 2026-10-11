@@ -4,9 +4,9 @@
 
 ### Detect breaking API contract changes before they reach consumers.
 
-A VS Code extension that detects breaking API contract changes across Git revisions in JavaScript and TypeScript repositories.
+A VS Code extension that detects breaking API contract changes across Git revisions in JavaScript, TypeScript, and supported Python repositories.
 
-[![Version](https://img.shields.io/badge/version-2.0.0-blue?style=for-the-badge)](#releases)
+[![Version](https://img.shields.io/badge/version-2.0.1-blue?style=for-the-badge)](#releases)
 [![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge\&logo=typescript\&logoColor=white)](https://www.typescriptlang.org/)
 [![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge\&logo=javascript\&logoColor=black)](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
 [![VS Code](https://img.shields.io/badge/VS%20Code-007ACC?style=for-the-badge\&logo=visualstudiocode\&logoColor=white)](https://code.visualstudio.com/)
@@ -67,6 +67,8 @@ Instead of discovering compatibility problems at runtime, developers can identif
 * Cross-file Express router composition
 * Nested router mounts
 * JavaScript and TypeScript module relationships
+* Static route discovery for supported FastAPI routers and Flask blueprints
+* Python relative-import and package re-export relationships
 * API contract differences across Git revisions
 
 ---
@@ -101,7 +103,7 @@ Guardian uses Git revisions to derive and compare API contracts instead of requi
 
 ### Static analysis
 
-Guardian analyzes JavaScript and TypeScript source code rather than executing the application.
+Guardian analyzes JavaScript, TypeScript, and a supported subset of Python source code rather than executing the application.
 
 This allows contract analysis during development without requiring the API server to be running.
 
@@ -588,7 +590,7 @@ npm test
 ## Clone
 
 ```bash
-git clone <YOUR_GITHUB_REPOSITORY_URL>
+git clone https://github.com/komallsingh/api-contract-guardian.git
 cd api-contract-guardian
 ```
 
@@ -632,10 +634,10 @@ Package the extension with:
 npx @vscode/vsce package
 ```
 
-This generates:
+For the current manifest version, this generates:
 
 ```text
-api-contract-guardian-2.0.0.vsix
+api-contract-guardian-2.0.1.vsix
 ```
 
 Install it from VS Code:
@@ -644,16 +646,14 @@ Install it from VS Code:
 Extensions
 → ...
 → Install from VSIX...
-→ api-contract-guardian-2.0.0.vsix
+→ api-contract-guardian-2.0.1.vsix
 ```
-
-If the extension is later published to the VS Code Marketplace, the installation instructions can be updated accordingly.
 
 ---
 
 # Running a Scan
 
-1. Open a Git repository containing your JavaScript or TypeScript API.
+1. Open a Git repository containing a supported JavaScript, TypeScript, or Python API.
 2. Open the VS Code Command Palette.
 3. Run:
 
@@ -773,13 +773,12 @@ Includes:
 
 ## V3
 
-Additional language support.
+Python route discovery is implemented for supported FastAPI routers and Flask blueprints. Additional language support remains planned:
 
-Planned languages:
-
-* Python
 * Java
 * Go
+
+Python discovery is static and syntax-pattern based; it does not execute applications or support all Python syntax and framework patterns.
 
 ---
 

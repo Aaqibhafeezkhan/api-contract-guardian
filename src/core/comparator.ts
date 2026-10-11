@@ -1,4 +1,7 @@
-import { ApiContract } from "./apiContract";
+import {
+    ApiContract,
+    UNKNOWN_RESPONSE_FIELD_TYPE
+} from "./apiContract";
 import {
     BreakingChange,
     BreakingChangeType
@@ -30,6 +33,9 @@ export function compareContracts(
         const newType = newFields.get(oldField.name);
 
         if (newType === undefined) {
+            if (newContract.response.fieldsComplete === false) {
+                continue;
+            }
 
             changes.push({
                 type: "REMOVED_RESPONSE_FIELD",
@@ -42,7 +48,11 @@ export function compareContracts(
             continue;
         }
 
-        if (oldField.type !== newType) {
+        if (
+            oldField.type !== newType &&
+            oldField.type !== UNKNOWN_RESPONSE_FIELD_TYPE &&
+            newType !== UNKNOWN_RESPONSE_FIELD_TYPE
+        ) {
 
             changes.push({
                 type: "CHANGED_RESPONSE_FIELD_TYPE",

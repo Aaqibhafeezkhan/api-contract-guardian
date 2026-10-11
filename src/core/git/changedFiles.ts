@@ -15,6 +15,7 @@ export function getChangedFiles(
         [
             "diff",
             "--name-status",
+            "--no-renames",
             oldRevision,
             newRevision
         ],

@@ -22,8 +22,24 @@ const IGNORED_DIRECTORIES = new Set([
     "out",
     "coverage",
     "build",
-    ".next"
+    ".next",
+    ".venv",
+    "venv",
+    "__pycache__",
+    ".tox",
+    ".mypy_cache",
+    ".pytest_cache",
+    ".ruff_cache",
+    ".pytype"
 ]);
+
+export function isIgnoredSourcePath(path: string): boolean {
+    return path
+        .split(/[\\/]/)
+        .some(segment =>
+            IGNORED_DIRECTORIES.has(segment.toLowerCase())
+        );
+}
 
 function getLanguage(
     filePath: string
@@ -66,11 +82,7 @@ export function discoverSourceFiles(
             of readdirSync(directory)
         ) {
 
-            if (
-                IGNORED_DIRECTORIES.has(
-                    entry
-                )
-            ) {
+            if (isIgnoredSourcePath(entry)) {
                 continue;
             }
 

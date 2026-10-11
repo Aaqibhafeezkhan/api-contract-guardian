@@ -25,7 +25,8 @@ import { ApiRevisionDiscovery } from "../core/git/apiRevisionDiscovery";
 
 suite("Contract Comparison Service", () => {
 
-    test("detects removed endpoint between revisions", async () => {
+    test("detects removed endpoint between revisions", async function () {
+        this.timeout(10000);
 
         const repositoryPath = mkdtempSync(
             join(

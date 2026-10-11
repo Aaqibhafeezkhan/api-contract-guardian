@@ -8,18 +8,7 @@ import {
 } from "path";
 
 import { ConsumerParser } from "./consumerParser";
-
-const IGNORED_DIRECTORIES = new Set([
-    ".git",
-    "node_modules",
-    ".vscode",
-    ".vscode-test",
-    ".next",
-    "build",
-    "coverage",
-    "dist",
-    "out"
-]);
+import { isIgnoredSourcePath } from "./repositoryDiscovery";
 
 export function findSourceFiles(
     rootDirectory: string,
@@ -32,7 +21,7 @@ export function findSourceFiles(
 
         for (const entry of readdirSync(directory)) {
 
-            if (IGNORED_DIRECTORIES.has(entry)) {
+            if (isIgnoredSourcePath(entry)) {
                 continue;
             }
 

@@ -1,6 +1,7 @@
 
 import * as assert from "assert";
 import { ApiDiscoveryService } from "../core/apiDiscoveryService";
+import { compareApiContracts } from "../core/apiComparator";
 import { JavaScriptParser } from "../languages/javascript/javascriptParser";
 import { PythonParser } from "../languages/python/pythonParser";
 import { SourceFileContent } from "../core/sourceFileLoader";
@@ -157,6 +158,34 @@ app.include_router(router)
         );
     });
 
+    test("does not report dynamic Python response values as removed fields", function () {
+        const oldContracts = parser.parse(
+            `
+@app.get("/users")
+def get_users():
+    return {
+        "id": 1
+    }
+`,
+            "app.py"
+        );
+        const newContracts = parser.parse(
+            `
+@app.get("/users")
+def get_users():
+    return {
+        "id": user_id
+    }
+`,
+            "app.py"
+        );
+
+        assert.deepStrictEqual(
+            compareApiContracts(oldContracts, newContracts),
+            []
+        );
+    });
+
     test("discovers multiple mounts of the same router", function () {
         const files: SourceFileContent[] = [
             {
@@ -288,7 +317,58 @@ def get_user(user_id: int):
     );
 });
 
-    test("discovers a router imported through a module alias", function () {
+test("detects a removed response field on a mounted router with dynamic fields", function () {
+    const oldFiles: SourceFileContent[] = [
+        {
+            path: "main.py",
+            language: "python",
+            content: `
+from fastapi import FastAPI
+from app.routers.users import router as users_router
+
+app = FastAPI()
+app.include_router(users_router, prefix="/api/v1")
+`
+        },
+        {
+            path: "app/routers/users.py",
+            language: "python",
+            content: `
+from fastapi import APIRouter
+
+router = APIRouter(prefix="/users")
+
+@router.get("/{user_id}")
+def get_user(user_id: int):
+    return {
+        "id": user_id,
+        "name": "Komal",
+        "active": True
+    }
+`
+        }
+    ];
+    const newFiles = oldFiles.map(file => ({
+        ...file,
+        content: file.content.replace('        "name": "Komal",\n', "")
+    }));
+
+    const oldContracts = parser.discoverRepository(oldFiles);
+    const newContracts = parser.discoverRepository(newFiles);
+
+    assert.deepStrictEqual(
+        compareApiContracts(oldContracts, newContracts),
+        [{
+            type: "REMOVED_RESPONSE_FIELD",
+            method: "GET",
+            path: "/api/v1/users/{user_id}",
+            field: "name",
+            oldType: "string"
+        }]
+    );
+});
+
+test("discovers a router imported through a module alias", function () {
         const files: SourceFileContent[] = [
             {
                 path: "service/app.py",
@@ -307,6 +387,46 @@ app.include_router(users_module.router, prefix="/api")
                 content: `
 from fastapi import APIRouter
 
+router = APIRouter(prefix="/v1")
+
+@router.get("/users")
+def get_users():
+    return {"id": 1}
+`
+            }
+        ];
+
+        assert.deepStrictEqual(
+            parser.discoverRepository(files).map(contract => contract.path),
+            ["/api/v1/users"]
+        );
+    });
+
+    test("resolves routers re-exported through a package initializer", function () {
+        const files: SourceFileContent[] = [
+            {
+                path: "service/app.py",
+                language: "python",
+                content: `
+from fastapi import FastAPI
+from service.routers import users_router
+
+app = FastAPI()
+app.include_router(users_router, prefix="/api")
+`
+            },
+            {
+                path: "service/routers/__init__.py",
+                language: "python",
+                content: `
+from .users import router as users_router
+`
+            },
+            {
+                path: "service/routers/users.py",
+                language: "python",
+                content: `
+from fastapi import APIRouter
 router = APIRouter(prefix="/v1")
 
 @router.get("/users")

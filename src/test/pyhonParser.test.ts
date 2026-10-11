@@ -1,4 +1,5 @@
 import * as assert from "assert";
+import { compareApiContracts } from "../core/apiComparator";
 import { PythonParser } from "../languages/python/pythonParser";
 
 suite("Python Parser", () => {
@@ -73,6 +74,88 @@ def get_users():
         ]
     );
 });
+
+test("extracts literal response fields from an inline dictionary", () => {
+    const [contract] = parser.parse(
+        `
+@app.get("/users")
+def get_users():
+    return {"id": 1, "active": True}
+`,
+        "app.py"
+    );
+
+    assert.deepStrictEqual(contract.response, {
+        fields: [
+            { name: "id", type: "number" },
+            { name: "active", type: "boolean" }
+        ]
+    });
+});
+
+test("preserves known keys from a response with dynamic values", () => {
+    const oldContract = parser.parse(
+        `
+@app.get("/users")
+def get_users():
+    return {
+        "id": 1,
+        "name": "Komal"
+    }
+`,
+        "app.py"
+    )[0];
+    const newContract = parser.parse(
+        `
+@app.get("/users")
+def get_users():
+    return {
+        "id": 1,
+        "name": load_name(),
+        "active": True
+    }
+`,
+        "app.py"
+    )[0];
+
+    assert.deepStrictEqual(newContract.response, {
+        fields: [
+            { name: "id", type: "number" },
+            { name: "name", type: "unknown" },
+            { name: "active", type: "boolean" }
+        ]
+    });
+    assert.deepStrictEqual(
+        compareApiContracts([oldContract], [newContract]),
+        []
+    );
+});
+
+test("treats an unknown response schema as unknown rather than empty", () => {
+    const oldContract = parser.parse(
+        `
+@app.get("/users")
+def get_users():
+    return {"id": 1}
+`,
+        "app.py"
+    )[0];
+    const newContract = parser.parse(
+        `
+@app.get("/users")
+def get_users():
+    return load_response()
+`,
+        "app.py"
+    )[0];
+
+    assert.strictEqual(newContract.response, undefined);
+    assert.deepStrictEqual(
+        compareApiContracts([oldContract], [newContract]),
+        []
+    );
+});
+
 test("discovers Flask routes and their HTTP methods", () => {
     const contracts = parser.parse(`
 @app.route("/health")
