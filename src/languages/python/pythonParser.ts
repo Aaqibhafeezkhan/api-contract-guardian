@@ -4,6 +4,8 @@ import {
     ResponseField
 } from "../../core/apiContract";
 import { LanguageParser } from "../../core/parser";
+import { SourceFileContent } from "../../core/sourceFileLoader";
+import { discoverPythonContracts } from "./pythonRouteDiscovery";
 
 export class PythonParser implements LanguageParser {
     supports(filePath: string): boolean {
@@ -61,7 +63,14 @@ for (let index = 0; index < lines.length; index++) {
 
         return contracts;
     }
-
+    discoverRepository(
+    sourceFiles: SourceFileContent[]
+): ApiContract[] {
+    return discoverPythonContracts(
+        sourceFiles,
+        (source, file) => this.parse(source, file)
+    );
+}
     private extractResponse(
         lines: string[],
         decoratorLine: number
