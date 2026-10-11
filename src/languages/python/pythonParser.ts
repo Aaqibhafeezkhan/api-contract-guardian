@@ -5,7 +5,10 @@ import {
 } from "../../core/apiContract";
 import { LanguageParser } from "../../core/parser";
 import { SourceFileContent } from "../../core/sourceFileLoader";
-import { discoverPythonContracts } from "./pythonRouteDiscovery";
+import {
+    discoverPythonContracts,
+    logicalStatements
+} from "./pythonRouteDiscovery";
 
 export class PythonParser implements LanguageParser {
     supports(filePath: string): boolean {
@@ -20,46 +23,49 @@ export class PythonParser implements LanguageParser {
         const lines = sourceCode.split(/\r?\n/);
 
         const routePattern =
-    /^\s*@(?:\w+\.)?(get|post|put|patch|delete|route)\(\s*["']([^"']+)["'](.*?)\)\s*$/i;
+            /^\s*@([\w.]+)\.(get|post|put|patch|delete|route)\s*\(\s*["']([^"']+)["'](.*?)\)\s*$/i;
 
-for (let index = 0; index < lines.length; index++) {
-    const match = lines[index].match(routePattern);
+        for (const statement of logicalStatements(lines)) {
+            const match = statement.text.match(routePattern);
 
-    if (!match) {
-        continue;
-    }
+            if (!match) {
+                continue;
+            }
 
-    const decorator = match[1].toLowerCase();
-    const path = match[2];
-    const options = match[3];
+            const decorator = match[2].toLowerCase();
+            const path = match[3];
+            const options = match[4];
 
-    let methods: string[];
+            let methods: string[];
 
-    if (decorator === "route") {
-        const methodsMatch = options.match(
-            /methods\s*=\s*\[([^\]]*)\]/i
-        );
+            if (decorator === "route") {
+                const methodsMatch = options.match(
+                    /methods\s*=\s*\[([^\]]*)\]/i
+                );
 
-        methods = methodsMatch
-            ? [...methodsMatch[1].matchAll(/["'](GET|POST|PUT|PATCH|DELETE)["']/gi)]
-                .map(method => method[1].toUpperCase())
-            : ["GET"];
-    } else {
-        methods = [decorator.toUpperCase()];
-    }
+                methods = methodsMatch
+                    ? [...methodsMatch[1].matchAll(/["'](GET|POST|PUT|PATCH|DELETE)["']/gi)]
+                        .map(method => method[1].toUpperCase())
+                    : ["GET"];
+            } else {
+                methods = [decorator.toUpperCase()];
+            }
 
-    const response = this.extractResponse(lines, index);
+            const response = this.extractResponse(
+                lines,
+                statement.line - 1
+            );
 
-    for (const method of methods) {
-        contracts.push({
-            method: method as ApiContract["method"],
-            path,
-            file: filePath,
-            line: index + 1,
-            response
-        });
-    }
-}
+            for (const method of methods) {
+                contracts.push({
+                    method: method as ApiContract["method"],
+                    path,
+                    file: filePath,
+                    line: statement.line,
+                    response
+                });
+            }
+        }
 
         return contracts;
     }

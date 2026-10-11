@@ -11,12 +11,15 @@ interface SymbolReference {
 interface ImportReference {
     file: string;
     name: string;
+    isModule?: boolean;
 }
 
 interface MountRelation {
     child: SymbolReference;
     parent: SymbolReference;
     prefix: string;
+    operation: "include_router" | "register_blueprint";
+    hasPrefix: boolean;
 }
 
 interface PythonModule {
@@ -28,6 +31,8 @@ interface PythonModule {
         owner: string;
         target: string;
         prefix: string;
+        operation: "include_router" | "register_blueprint";
+        hasPrefix: boolean;
     }>;
     contracts: ApiContract[];
 }
@@ -123,9 +128,9 @@ function readImports(
     const imports = new Map<string, ImportReference>();
     const lines = source.content.split(/\r?\n/);
 
-    for (const line of lines) {
-        const fromImport = line.match(
-            /^\s*from\s+([\w.]+)\s+import\s+(.+?)\s*(?:#.*)?$/
+    for (const statement of logicalStatements(lines)) {
+        const fromImport = statement.text.match(
+            /^\s*from\s+([\w.]+)\s+import\s+(.+?)\s*$/
         );
 
         if (fromImport) {
@@ -157,8 +162,8 @@ function readImports(
             continue;
         }
 
-        const moduleImport = line.match(
-            /^\s*import\s+([\w.]+)\s+as\s+(\w+)\s*(?:#.*)?$/
+        const moduleImport = statement.text.match(
+            /^\s*import\s+([\w.]+)\s+as\s+(\w+)\s*$/
         );
 
         if (moduleImport) {
@@ -171,13 +176,122 @@ function readImports(
             if (targetFile) {
                 imports.set(moduleImport[2], {
                     file: targetFile,
-                    name: "*"
+                    name: "*",
+                    isModule: true
                 });
             }
         }
     }
 
     return imports;
+}
+
+// This lightweight scanner groups parenthesized statements; it is not a full Python tokenizer.
+// Bracket/brace continuation and explicit backslash continuation are outside its scope.
+export function* logicalStatements(lines: string[]): Generator<{
+    line: number;
+    text: string;
+}> {
+    let startLine = 1;
+    let text = "";
+    let depth = 0;
+    let quote: "'" | "\"" | undefined;
+    let tripleQuoted = false;
+    let escaped = false;
+
+    for (let index = 0; index < lines.length; index++) {
+        const line = lines[index];
+
+        if (!text) {
+            startLine = index + 1;
+        }
+
+        let code = "";
+
+        for (let cursor = 0; cursor < line.length; cursor++) {
+            const character = line[cursor];
+
+            if (quote) {
+                code += character;
+
+                if (escaped) {
+                    escaped = false;
+                    continue;
+                }
+
+                if (character === "\\") {
+                    escaped = true;
+                    continue;
+                }
+
+                if (tripleQuoted) {
+                    if (
+                        character === quote &&
+                        line.slice(cursor, cursor + 3) === quote.repeat(3)
+                    ) {
+                        code += line.slice(cursor + 1, cursor + 3);
+                        cursor += 2;
+                        quote = undefined;
+                        tripleQuoted = false;
+                    }
+                } else if (character === quote) {
+                    quote = undefined;
+                }
+
+                continue;
+            }
+
+            if (character === "#") {
+                break;
+            }
+
+            if (character === "'" || character === "\"") {
+                quote = character;
+                tripleQuoted =
+                    line.slice(cursor, cursor + 3) === character.repeat(3);
+                code += tripleQuoted
+                    ? line.slice(cursor, cursor + 3)
+                    : character;
+
+                if (tripleQuoted) {
+                    cursor += 2;
+                }
+
+                continue;
+            }
+
+            if (character === "(") {
+                depth++;
+            } else if (character === ")") {
+                depth--;
+            }
+
+            code += character;
+        }
+
+        if (quote && !tripleQuoted && !escaped) {
+            quote = undefined;
+        }
+
+        // A trailing backslash escapes the physical newline, not the next character.
+        if (escaped) {
+            escaped = false;
+        }
+
+        text += `${text ? " " : ""}${code.trim()}`;
+
+        if (depth <= 0 && !tripleQuoted && !quote) {
+            if (text.trim()) {
+                yield { line: startLine, text };
+            }
+            text = "";
+            depth = 0;
+        }
+    }
+
+    if (text.trim()) {
+        yield { line: startLine, text };
+    }
 }
 
 function discoverModule(
@@ -191,22 +305,22 @@ function discoverModule(
     const mounts: PythonModule["mounts"] = [];
 
     const routerPattern =
-        /^\s*(\w+)\s*=\s*(?:[\w.]+\.)?APIRouter\s*\((.*)\)/;
+        /^\s*(\w+)\s*=\s*(?:[\w.]+\.)?APIRouter\s*\((.*)\)\s*$/;
 
     const blueprintPattern =
-        /^\s*(\w+)\s*=\s*(?:[\w.]+\.)?Blueprint\s*\((.*)\)/;
+        /^\s*(\w+)\s*=\s*(?:[\w.]+\.)?Blueprint\s*\((.*)\)\s*$/;
 
     const routePattern =
-        /^\s*@(\w+)\.(get|post|put|patch|delete|route)\s*\(/i;
+        /^\s*@([\w.]+)\.(get|post|put|patch|delete|route)\s*\(/i;
 
     const mountPattern =
-        /\b(\w+)\.(include_router|register_blueprint)\s*\(\s*(\w+)\s*(?:,([^)]*))?\)/g;
+        /\b([\w.]+)\.(include_router|register_blueprint)\s*\(\s*([\w.]+)\s*(?:,([\s\S]*))?\)\s*$/g;
 
-    for (let index = 0; index < lines.length; index++) {
-        const line = lines[index];
+    for (const statement of logicalStatements(lines)) {
+        const { line: lineNumber, text } = statement;
 
-        const routerMatch = line.match(routerPattern);
-        const blueprintMatch = line.match(blueprintPattern);
+        const routerMatch = text.match(routerPattern);
+        const blueprintMatch = text.match(blueprintPattern);
 
         if (routerMatch) {
             const prefix = routerMatch[2].match(
@@ -224,19 +338,22 @@ function discoverModule(
             prefixes.set(blueprintMatch[1], prefix);
         }
 
-        const routeMatch = line.match(routePattern);
+        const routeMatch = text.match(routePattern);
 
         if (routeMatch) {
-            routeOwners.set(index + 1, routeMatch[1]);
+            routeOwners.set(lineNumber, routeMatch[1]);
         }
 
         mountPattern.lastIndex = 0;
 
         let mountMatch: RegExpExecArray | null;
 
-        while ((mountMatch = mountPattern.exec(line)) !== null) {
+        while ((mountMatch = mountPattern.exec(text)) !== null) {
             const owner = mountMatch[1];
-            const operation = mountMatch[2];
+            const operation =
+                mountMatch[2] === "register_blueprint"
+                    ? "register_blueprint"
+                    : "include_router";
             const target = mountMatch[3];
             const argumentsText = mountMatch[4] ?? "";
 
@@ -245,13 +362,20 @@ function discoverModule(
                     ? "prefix"
                     : "url_prefix";
 
-            const prefix = argumentsText.match(
+            const prefixMatch = argumentsText.match(
                 new RegExp(
                     `\\b${prefixName}\\s*=\\s*["']([^"']*)["']`
                 )
-            )?.[1] ?? "";
+            );
+            const prefix = prefixMatch?.[1] ?? "";
 
-            mounts.push({ owner, target, prefix });
+            mounts.push({
+                owner,
+                target,
+                prefix,
+                operation,
+                hasPrefix: prefixMatch !== null
+            });
         }
     }
 
@@ -269,12 +393,20 @@ function resolveSymbol(
     module: PythonModule,
     name: string
 ): SymbolReference {
-    const imported = module.imports.get(name);
+    const [importName, ...members] = name.split(".");
+    const imported = module.imports.get(importName);
+
+    if (imported?.isModule && members.length > 0) {
+        return {
+            file: imported.file,
+            name: members.join(".")
+        };
+    }
 
     if (imported && imported.name !== "*") {
         return {
             file: imported.file,
-            name: imported.name
+            name: [imported.name, ...members].join(".")
         };
     }
 
@@ -287,6 +419,7 @@ function resolveSymbol(
 function collectPrefixes(
     reference: SymbolReference,
     mountsByChild: Map<string, MountRelation[]>,
+    modulesByPath: Map<string, PythonModule>,
     visiting: Set<string>
 ): string[] {
     const key = symbolKey(reference);
@@ -295,10 +428,15 @@ function collectPrefixes(
         return [];
     }
 
+    const module = modulesByPath.get(
+        normalizePath(reference.file)
+    );
+    const intrinsicPrefix =
+        module?.prefixes.get(reference.name) ?? "";
     const relations = mountsByChild.get(key) ?? [];
 
     if (relations.length === 0) {
-        return [""];
+        return [intrinsicPrefix];
     }
 
     const nextVisiting = new Set(visiting);
@@ -310,12 +448,19 @@ function collectPrefixes(
         const parentPrefixes = collectPrefixes(
             relation.parent,
             mountsByChild,
+            modulesByPath,
             nextVisiting
         );
 
         for (const parentPrefix of parentPrefixes) {
             prefixes.push(
-                combinePaths(parentPrefix, relation.prefix)
+                combinePaths(
+                    parentPrefix,
+                    relation.operation === "register_blueprint" &&
+                        relation.hasPrefix
+                        ? relation.prefix
+                        : combinePaths(relation.prefix, intrinsicPrefix)
+                )
             );
         }
     }
@@ -348,7 +493,9 @@ export function discoverPythonContracts(
             const relation: MountRelation = {
                 parent,
                 child,
-                prefix: mount.prefix
+                prefix: mount.prefix,
+                operation: mount.operation,
+                hasPrefix: mount.hasPrefix
             };
 
             const key = symbolKey(child);
@@ -371,30 +518,17 @@ export function discoverPythonContracts(
             }
 
             const owner = resolveSymbol(module, ownerName);
-            const ownerModule = modulesByPath.get(
-                normalizePath(owner.file)
-            );
-
-            const intrinsicPrefix =
-                ownerModule?.prefixes.get(owner.name) ?? "";
 
             const mountPrefixes = collectPrefixes(
                 owner,
                 mountsByChild,
+                modulesByPath,
                 new Set()
             );
 
-            const usablePrefixes =
-                mountPrefixes.length > 0 ? mountPrefixes : [""];
-
             const seenPaths = new Set<string>();
 
-            for (const mountPrefix of usablePrefixes) {
-                const prefix = combinePaths(
-                    mountPrefix,
-                    intrinsicPrefix
-                );
-
+            for (const prefix of mountPrefixes) {
                 const path = combinePaths(prefix, contract.path);
 
                 if (seenPaths.has(path)) continue;
