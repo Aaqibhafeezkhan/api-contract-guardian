@@ -1,6 +1,6 @@
 import * as assert from "assert";
-import { compareApiContracts } from "../core/apiComparator";
-import { PythonParser } from "../languages/python/pythonParser";
+import { compareApiContracts } from "../../core/apiComparator";
+import { PythonParser } from "../../languages/python/pythonParser";
 
 suite("Python Parser", () => {
     const parser = new PythonParser();

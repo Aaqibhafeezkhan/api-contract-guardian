@@ -1,10 +1,10 @@
 
 import * as assert from "assert";
-import { ApiDiscoveryService } from "../core/apiDiscoveryService";
-import { compareApiContracts } from "../core/apiComparator";
-import { JavaScriptParser } from "../languages/javascript/javascriptParser";
-import { PythonParser } from "../languages/python/pythonParser";
-import { SourceFileContent } from "../core/sourceFileLoader";
+import { ApiDiscoveryService } from "../../core/apiDiscoveryService";
+import { compareApiContracts } from "../../core/apiComparator";
+import { JavaScriptParser } from "../../languages/javascript/javascriptParser";
+import { PythonParser } from "../../languages/python/pythonParser";
+import { SourceFileContent } from "../../core/sourceFileLoader";
 
 suite("Python route discovery", function () {
     const parser = new PythonParser();
