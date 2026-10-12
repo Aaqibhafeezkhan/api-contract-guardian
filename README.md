@@ -4,9 +4,9 @@
 
 ### Detect breaking API contract changes before they reach consumers.
 
-A VS Code extension that detects breaking API contract changes across Git revisions in JavaScript, TypeScript, and supported Python repositories.
+A VS Code extension that detects breaking API contract changes across Git revisions in JavaScript, TypeScript, and supported Python APIs.
 
-[![Version](https://img.shields.io/badge/version-2.0.1-blue?style=for-the-badge)](#releases)
+[![Version](https://img.shields.io/badge/version-3.0.0-blue?style=for-the-badge)](#releases)
 [![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge\&logo=typescript\&logoColor=white)](https://www.typescriptlang.org/)
 [![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge\&logo=javascript\&logoColor=black)](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
 [![VS Code](https://img.shields.io/badge/VS%20Code-007ACC?style=for-the-badge\&logo=visualstudiocode\&logoColor=white)](https://code.visualstudio.com/)
@@ -123,47 +123,39 @@ It analyzes the structure and relationships of the source code to identify Expre
 
 # V1 — Core API Contract Detection
 
-V1 established the core API contract analysis and Git comparison capabilities.
+V1 established the foundation of Guardian: it inspects API source files for route definitions and response payloads, compares the previous and current Git revisions, and reports breaking contract changes directly in VS Code.
 
 ### V1 capabilities
 
 * [x] Detect removed API endpoints
 * [x] Detect removed response fields
 * [x] Detect changed response field types
-* [x] Extract response contracts from `res.json()`
+* [x] Extract response contracts from `res.json()` patterns
 * [x] Identify potentially affected JavaScript and TypeScript consumers
 * [x] Compare Git revisions
 * [x] Report findings through the VS Code Problems panel
-* [x] Support JavaScript
-* [x] Support TypeScript
-* [x] Perform file-level API analysis
-
-### V1 Architecture
+* [x] Support JavaScript and TypeScript source analysis
+* [x] Perform file-level API contract comparison
 
 ```mermaid
 flowchart LR
-    A["Git Revision"] --> B["API Source Files"]
-    B --> C["Route Detection"]
-    C --> D["Response Contract Extraction"]
-    D --> E["API Contract Model"]
-
-    E --> F["Contract Comparison"]
-
-    G["Current Revision"] --> H["Current API Contract"]
-    H --> F
-
-    F --> I["Breaking Changes"]
-    I --> J["Consumer Analysis"]
-    J --> K["VS Code Diagnostics"]
+    A["Git revision"] --> B["API source files"]
+    B --> C["Route detection"]
+    C --> D["Response contract extraction"]
+    D --> E["API contract model"]
+    E --> F["Compare prior vs current contract"]
+    F --> G["Breaking changes"]
+    G --> H["Consumer analysis"]
+    H --> I["VS Code diagnostics"]
 ```
 
-V1 provided the foundation for the repository-wide analysis introduced in V2.
+V1 provided the baseline contract-comparison model that later versions extended to repository-wide discovery and route composition.
 
 ---
 
 # V2 — Repository-Wide API Discovery
 
-Version 2.0.0 expands Guardian from file-level contract analysis into repository-wide API discovery.
+V2 expands Guardian from file-level analysis to repository-wide discovery. Instead of evaluating each API file in isolation, it indexes source files, resolves imports and exports, detects Express apps and routers, composes nested mounts, and compares the resulting API contracts across Git revisions.
 
 ### V2 capabilities
 
@@ -174,14 +166,10 @@ Version 2.0.0 expands Guardian from file-level contract analysis into repository
 * [x] Relative import resolution
 * [x] JavaScript and TypeScript extension resolution
 * [x] `index.js` / `index.ts` module resolution
-* [x] Default imports
-* [x] Named imports
-* [x] Default exports
-* [x] Named exports
-* [x] Express application detection
-* [x] Express router detection
+* [x] Default and named imports/exports
+* [x] Express application and router detection
 * [x] `express.Router()` detection
-* [x] Router detection without fixed variable names
+* [x] Route detection without fixed variable names
 * [x] `app.use()`-style mount detection
 * [x] Router-to-router mounts
 * [x] Nested router composition
@@ -192,56 +180,85 @@ Version 2.0.0 expands Guardian from file-level contract analysis into repository
 * [x] Consumer impact analysis
 * [x] VS Code diagnostics
 
-### V2 Architecture
-
 ```mermaid
 flowchart TD
-    A["Git Revision"] --> B["Repository Discovery"]
-
-    B --> C["Recursive JS / TS Source Discovery"]
-    C --> D["Source File Loading"]
-    D --> E["AST Parsing"]
-
-    E --> F["Module Indexing"]
-    F --> G["Import / Export Resolution"]
-
-    G --> H["Express App / Router Detection"]
-    H --> I["Route Detection"]
-    I --> J["Mount Detection"]
-    J --> K["Cross-File Route Composition"]
-
-    K --> L["API Contract Extraction"]
-    L --> M["API Contract Model"]
-
-    M --> N["Previous vs Current Contract Comparison"]
-
-    N --> O["Removed Endpoints"]
-    N --> P["Removed Response Fields"]
-    N --> Q["Response Type Changes"]
-
-    O --> R["Consumer Analysis"]
-    P --> R
-    Q --> R
-
-    R --> S["VS Code Diagnostics"]
+    A["Git revision"] --> B["Repository discovery"]
+    B --> C["Source file loading"]
+    C --> D["Module indexing + import resolution"]
+    D --> E["Express app / router detection"]
+    E --> F["Route + mount detection"]
+    F --> G["Cross-file route composition"]
+    G --> H["API contract extraction"]
+    H --> I["Compare previous vs current contracts"]
+    I --> J["Breaking changes"]
+    J --> K["Consumer impact analysis"]
+    K --> L["VS Code diagnostics"]
 ```
 
-The major architectural change in V2 is that API discovery happens across the repository before contract comparison.
+The major architectural change in V2 is that discovery happens across the repository before comparison, which allows Guardian to reason about APIs that span multiple files and router layers.
 
 ---
 
-# V1 → V2 Evolution
+# V3 — Python Route Discovery
 
-| V1                         | V2                                                    |
-| -------------------------- | ----------------------------------------------------- |
-| File-level API analysis    | Repository-wide API discovery                         |
-| Direct route detection     | Cross-file route composition                          |
-| Limited module awareness   | Module indexing and resolution                        |
-| Individual router analysis | Nested router composition                             |
-| Contract comparison        | Repository-wide contract comparison                   |
-| JavaScript / TypeScript    | JavaScript / TypeScript with cross-file relationships |
+V3 adds static Python route discovery for supported FastAPI and Flask patterns. The repository-aware analysis can discover routes across related files where the routing structure is statically clear, including common FastAPI router composition and Flask blueprint-style registration patterns.
 
-V2 is therefore not simply an expanded test suite. It introduces a broader discovery architecture capable of understanding how APIs are connected across source files.
+### V3 capabilities
+
+* [x] Python file detection
+* [x] FastAPI-style route detection for common decorator patterns
+* [x] Flask-style route detection for common decorator patterns
+* [x] Static route composition for supported repository patterns
+* [x] Python contract extraction for supported route implementations
+* [x] Git-aware comparison for supported Python APIs
+* [x] Integration with the same VS Code diagnostics workflow
+
+### Python static-analysis limitations
+
+Python support is intentionally conservative and statically based. Guardian does not execute Python applications, and it does not attempt to resolve every possible dynamic framework pattern or runtime-generated route. Supported behavior is limited to the patterns that are reliably detectable in the source code, such as common FastAPI and Flask decorator usage and straightforward route composition. Dynamic imports, non-standard framework conventions, and highly dynamic Python routing may not be fully inferred.
+
+```mermaid
+flowchart LR
+    A["Project scan"] --> B["Python source discovery"]
+    B --> C["Decorator + route detection"]
+    C --> D["FastAPI / Flask pattern matching"]
+    D --> E["Repository-aware route composition"]
+    E --> F["Python API contracts"]
+    F --> G["Contract comparison"]
+    G --> H["Breaking changes + diagnostics"]
+```
+
+Python support follows Guardian’s static-analysis model; it is not a full runtime Python API analysis engine.
+
+---
+
+# V1 → V2 → V3 Evolution
+
+| Version | Primary focus | Key capabilities | Key constraint |
+| ------- | ------------- | ---------------- | -------------- |
+| V1 | Core contract detection | Route extraction, response-field comparison, Git-based diffing, VS Code diagnostics | File-level analysis |
+| V2 | Repository-wide discovery | Cross-file module resolution, route composition, nested mounts, repository-wide contract discovery | JavaScript / TypeScript static analysis |
+| V3 | Python route discovery | Supported FastAPI and Flask route discovery, repository-aware route composition, Python contract comparison | Static analysis only; not full dynamic Python runtime analysis |
+
+The evolution is straightforward: V1 established the contract model, V2 expanded discovery across the repository, and V3 added supported Python patterns to the same comparison-and-diagnostics workflow.
+
+---
+
+# Core Architecture Workflow
+
+```mermaid
+flowchart TD
+    A["Project scan"] --> B["Repository discovery"]
+    B --> C["Source file loading"]
+    C --> D["Language parser selection"]
+    D --> E["JavaScript / TypeScript / Python analysis"]
+    E --> F["Route + mount + import resolution"]
+    F --> G["API contract extraction"]
+    G --> H["Compare previous vs current contracts"]
+    H --> I["Breaking change detection"]
+    I --> J["Consumer impact analysis"]
+    J --> K["VS Code diagnostics"]
+```
 
 ---
 
@@ -409,34 +426,35 @@ Warning  Potentially affected consumer: response field "email"
 ```
 
 This allows developers to inspect API compatibility issues alongside other development problems.
+### Example: Python
 
-A recommended project screenshot is the VS Code Problems panel showing one or more real Guardian diagnostics.
+![API Contract Guardian Problems Panel — Python](images/problem-python.png)
 
-```markdown
-![API Contract Guardian Problems Panel](docs/images/problems-panel.png)
-```
+### Example: JavaScript / TypeScript
 
+![API Contract Guardian Problems Panel — JavaScript and TypeScript](images/problem-js.png)
 ---
 
 # Language Support
 
 ## API Detection
 
-Currently supported:
+Supported:
 
 * JavaScript
 * TypeScript
+* Python (supported FastAPI and Flask patterns; static analysis)
 
 ## Consumer Analysis
 
-Currently supported:
+Supported:
 
 * JavaScript
 * JSX
 * TypeScript
 * TSX
 
-The language-specific parsing layer is separated from the core contract comparison engine, allowing additional languages to be introduced later.
+The language-specific parsing layer is separated from the core contract comparison engine.
 
 ---
 
@@ -506,12 +524,12 @@ Potential consumer impact is reported as a warning rather than being presented a
 
 # Current Limitations
 
-API Contract Guardian focuses on statically detectable JavaScript and TypeScript API contracts.
+API Contract Guardian analyzes statically detectable JavaScript, TypeScript, and supported Python API patterns.
 
 Current limitations include:
 
-* JavaScript and TypeScript only
-* Primarily Express-style API detection
+* Python support is limited to supported FastAPI and Flask patterns
+* Primarily Express-style API detection for JavaScript and TypeScript
 * Static analysis rather than runtime execution
 * Dynamic route construction may not be resolvable
 * Dynamic response objects may not be fully inferable
@@ -637,7 +655,7 @@ npx @vscode/vsce package
 For the current manifest version, this generates:
 
 ```text
-api-contract-guardian-2.0.1.vsix
+api-contract-guardian-3.0.0.vsix
 ```
 
 Install it from VS Code:
@@ -646,7 +664,7 @@ Install it from VS Code:
 Extensions
 → ...
 → Install from VSIX...
-→ api-contract-guardian-2.0.1.vsix
+→ api-contract-guardian-3.0.0.vsix
 ```
 
 ---
@@ -713,6 +731,15 @@ npx @vscode/vsce package
 
 # Releases
 
+## v3.0.0
+
+### Python Route Discovery
+
+* Static route discovery for supported FastAPI and Flask patterns
+* Repository-aware route composition across related Python files
+* Git-based Python API contract comparison
+* Python API findings in VS Code diagnostics
+
 ## v2.0.0
 
 ### Repository-Wide API Discovery
@@ -773,7 +800,9 @@ Includes:
 
 ## V3
 
-Python route discovery is implemented for supported FastAPI routers and Flask blueprints. Additional language support remains planned:
+Status: Complete
+
+Python route discovery supports common FastAPI router and Flask blueprint patterns through static analysis. Additional language support remains planned:
 
 * Java
 * Go
@@ -831,9 +860,9 @@ Then open a Pull Request.
 | Category           | Technology                       |
 | ------------------ | -------------------------------- |
 | Language           | TypeScript                       |
-| API Analysis       | JavaScript / TypeScript          |
+| API Analysis       | JavaScript, TypeScript, Python   |
 | Static Analysis    | AST-based parsing                |
-| API Framework      | Express-style APIs               |
+| API Framework      | Express, FastAPI, Flask patterns |
 | Consumer Analysis  | JavaScript, JSX, TypeScript, TSX |
 | Editor Integration | VS Code Extension API            |
 | Version Control    | Git                              |
@@ -866,6 +895,3 @@ Software Developer · Backend Developer · Open Source Contributor
 **Catch breaking API changes before they reach consumers.**
 
 ⭐ If you find the project useful, consider starring the repository.
-
-
-</div>
