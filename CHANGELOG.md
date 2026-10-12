@@ -4,20 +4,33 @@ All notable changes to API Contract Guardian are documented here.
 
 ## [Unreleased]
 
+## [3.0.0] - 2026-10-12
+
 ### Added
 
-- Static route discovery for supported FastAPI routers and Flask blueprints
-- Python relative imports, module aliases, and package initializer re-exports
-- Python FastAPI/Flask contracts in Git revision comparisons
+- Static route discovery for supported FastAPI routers and Flask blueprints.
+- Python relative imports, module aliases, and package initializer re-exports.
+- Python FastAPI and Flask API contracts in Git revision comparisons.
+- Cross-file Python route discovery and router-prefix composition.
 
 ### Improved
 
-- Apply generated and dependency directory exclusions to both workspace and Git revision source discovery
-- Ignore common Python virtual-environment and cache directories during workspace discovery
+- Apply generated and dependency directory exclusions to both workspace and Git revision source discovery.
+- Ignore common Python virtual-environment and cache directories during workspace discovery.
+- Extend Git-based API contract comparison to supported Python routes while retaining JavaScript and TypeScript discovery.
+
+### Validation
+
+- Verified detection of removed API endpoints.
+- Verified detection of removed response fields.
+- Verified detection of response field type changes.
+- Verified that adding a response field is not reported as a breaking change.
+- Verified Python FastAPI and TypeScript API detection in the test projects.
 
 ### Limitations
 
-- Python discovery is syntax-pattern based and does not support the full Python language, dynamic routing, or arbitrary framework behavior
+- Python discovery is syntax-pattern based and does not support the full Python language, dynamic routing, or arbitrary framework behavior.
+- Consumer analysis remains conservative; dynamic API URLs, runtime-generated routes, and complex cross-file data flow are not fully supported.
 
 ## [2.0.0]
 
