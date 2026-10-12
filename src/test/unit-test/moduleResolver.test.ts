@@ -2,11 +2,11 @@ import * as assert from "assert";
 
 import {
     JavaScriptModuleResolver
-} from "../languages/javascript/moduleResolver";
+} from "../../languages/javascript/moduleResolver";
 
 import {
     JavaScriptModule
-} from "../languages/javascript/moduleGraph";
+} from "../../languages/javascript/moduleGraph";
 
 suite(
     "JavaScript Module Resolver",

@@ -9,11 +9,11 @@ import { join } from "path";
 
 import {
     ConsumerAnalysisService
-} from "../core/consumerAnalysisService";
+} from "../../core/consumerAnalysisService";
 
 import {
     JavaScriptConsumerParser
-} from "../languages/javascript/consumerParser";
+} from "../../languages/javascript/consumerParser";
 
 suite("Consumer Analysis Service", () => {
 

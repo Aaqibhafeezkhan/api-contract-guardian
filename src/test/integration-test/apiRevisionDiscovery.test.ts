@@ -24,19 +24,19 @@ import {
 
 import {
     ApiDiscoveryService
-} from "../core/apiDiscoveryService";
+} from "../../core/apiDiscoveryService";
 
 import {
     ApiRevisionDiscovery
-} from "../core/git/apiRevisionDiscovery";
+} from "../../core/git/apiRevisionDiscovery";
 
 import {
     GitSourceRepository
-} from "../core/git/gitSourceRepository";
+} from "../../core/git/gitSourceRepository";
 
 import {
     JavaScriptParser
-} from "../languages/javascript/javascriptParser";
+} from "../../languages/javascript/javascriptParser";
 
 suite(
     "API Revision Discovery",

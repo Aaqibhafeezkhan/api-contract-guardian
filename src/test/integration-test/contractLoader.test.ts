@@ -1,7 +1,7 @@
 import * as assert from "assert";
-import { ContractLoader } from "../core/contract/contractLoader";
-import { GitService } from "../core/git/gitService";
-import { JavaScriptParser } from "../languages/javascript/javascriptParser";
+import { ContractLoader } from "../../core/contract/contractLoader";
+import { GitService } from "../../core/git/gitService";
+import { JavaScriptParser } from "../../languages/javascript/javascriptParser";
 
 suite("Contract Loader", () => {
 

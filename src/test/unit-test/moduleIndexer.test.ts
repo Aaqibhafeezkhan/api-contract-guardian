@@ -2,7 +2,7 @@ import * as assert from "assert";
 
 import {
     indexModule
-} from "../languages/javascript/moduleIndexer";
+} from "../../languages/javascript/moduleIndexer";
 
 suite(
     "JavaScript Module Indexer",

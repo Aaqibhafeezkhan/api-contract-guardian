@@ -1,7 +1,7 @@
 import * as assert from "assert";
 import {
     JavaScriptConsumerParser
-} from "../languages/javascript/consumerParser";
+} from "../../languages/javascript/consumerParser";
 
 suite("JavaScript Consumer Parser", () => {
 

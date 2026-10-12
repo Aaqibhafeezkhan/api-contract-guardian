@@ -13,15 +13,15 @@ import { tmpdir } from "os";
 
 import { join } from "path";
 
-import { ContractComparisonService } from "../core/contractComparisonService";
+import { ContractComparisonService } from "../../core/contractComparisonService";
 
-import { JavaScriptParser } from "../languages/javascript/javascriptParser";
+import { JavaScriptParser } from "../../languages/javascript/javascriptParser";
 
-import { ApiDiscoveryService } from "../core/apiDiscoveryService";
+import { ApiDiscoveryService } from "../../core/apiDiscoveryService";
 
-import { GitSourceRepository } from "../core/git/gitSourceRepository";
+import { GitSourceRepository } from "../../core/git/gitSourceRepository";
 
-import { ApiRevisionDiscovery } from "../core/git/apiRevisionDiscovery";
+import { ApiRevisionDiscovery } from "../../core/git/apiRevisionDiscovery";
 
 suite("Contract Comparison Service", () => {
 

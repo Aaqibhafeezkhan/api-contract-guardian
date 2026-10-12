@@ -3,7 +3,7 @@ import ts from "typescript";
 
 import {
     detectRoutes
-} from "../languages/javascript/routeDetector";
+} from "../../languages/javascript/routeDetector";
 
 suite("Route Detector", () => {
 

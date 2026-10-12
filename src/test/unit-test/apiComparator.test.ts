@@ -1,6 +1,6 @@
 import * as assert from "assert";
-import { compareApiContracts } from "../core/apiComparator";
-import { ApiContract } from "../core/apiContract";
+import { compareApiContracts } from "../../core/apiComparator";
+import { ApiContract } from "../../core/apiContract";
 
 suite("API Comparator", () => {
 

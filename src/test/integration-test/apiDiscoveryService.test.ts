@@ -2,12 +2,12 @@ import * as assert from "assert";
 
 import {
     ApiDiscoveryService
-} from "../core/apiDiscoveryService";
+} from "../../core/apiDiscoveryService";
 
 import {
     JavaScriptParser
-} from "../languages/javascript/javascriptParser";
-import { PythonParser } from "../languages/python/pythonParser";
+} from "../../languages/javascript/javascriptParser";
+import { PythonParser } from "../../languages/python/pythonParser";
 suite(
     "API Discovery Service",
     () => {

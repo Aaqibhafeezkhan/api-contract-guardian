@@ -13,24 +13,24 @@ import { tmpdir } from "os";
 
 import { join } from "path";
 
-import { compareApiContracts } from "../core/apiComparator";
+import { compareApiContracts } from "../../core/apiComparator";
 
-import { ContractLoader } from "../core/contract/contractLoader";
+import { ContractLoader } from "../../core/contract/contractLoader";
 
-import { GitService } from "../core/git/gitService";
+import { GitService } from "../../core/git/gitService";
 
-import { getChangedFiles } from "../core/git/changedFiles";
+import { getChangedFiles } from "../../core/git/changedFiles";
 
-import { JavaScriptParser } from "../languages/javascript/javascriptParser";
+import { JavaScriptParser } from "../../languages/javascript/javascriptParser";
 
-import { ContractComparisonService } from "../core/contractComparisonService";
+import { ContractComparisonService } from "../../core/contractComparisonService";
 
-import { ApiDiscoveryService } from "../core/apiDiscoveryService";
+import { ApiDiscoveryService } from "../../core/apiDiscoveryService";
 
-import { ApiRevisionDiscovery } from "../core/git/apiRevisionDiscovery";
+import { ApiRevisionDiscovery } from "../../core/git/apiRevisionDiscovery";
 
-import { GitSourceRepository } from "../core/git/gitSourceRepository";
-import { PythonParser } from "../languages/python/pythonParser";
+import { GitSourceRepository } from "../../core/git/gitSourceRepository";
+import { PythonParser } from "../../languages/python/pythonParser";
 
 suite("Git Comparison E2E", () => {
 

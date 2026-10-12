@@ -1,7 +1,7 @@
 import * as assert from "assert";
-import { ApiContract } from "../core/apiContract";
-import { BreakingChange } from "../core/breakingChange";
-import { createDiagnostics } from "../vscode/diagnostics";
+import { ApiContract } from "../../core/apiContract";
+import { BreakingChange } from "../../core/breakingChange";
+import { createDiagnostics } from "../../vscode/diagnostics";
 
 suite("Diagnostics", () => {
 

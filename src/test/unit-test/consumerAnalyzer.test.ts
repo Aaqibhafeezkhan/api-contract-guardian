@@ -1,8 +1,8 @@
 import * as assert from "assert";
 
-import { findConsumers } from "../core/consumerAnalyzer";
-import { BreakingChange } from "../core/breakingChange";
-import { JavaScriptConsumerParser } from "../languages/javascript/consumerParser";
+import { findConsumers } from "../../core/consumerAnalyzer";
+import { BreakingChange } from "../../core/breakingChange";
+import { JavaScriptConsumerParser } from "../../languages/javascript/consumerParser";
 
 suite("Consumer Analyzer", () => {
 

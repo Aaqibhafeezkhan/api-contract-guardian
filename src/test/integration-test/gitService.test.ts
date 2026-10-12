@@ -1,5 +1,5 @@
 import * as assert from "assert";
-import { GitService } from "../core/git/gitService";
+import { GitService } from "../../core/git/gitService";
 
 suite("Git Service", () => {
 

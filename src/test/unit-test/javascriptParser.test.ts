@@ -1,5 +1,5 @@
 import * as assert from "assert";
-import { JavaScriptParser } from "../languages/javascript/javascriptParser";
+import { JavaScriptParser } from "../../languages/javascript/javascriptParser";
 
 suite("JavaScript Parser", () => {
 

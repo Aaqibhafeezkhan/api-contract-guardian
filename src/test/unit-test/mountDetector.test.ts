@@ -2,7 +2,7 @@ import * as assert from "assert";
 
 import {
     detectMounts
-} from "../languages/javascript/mountDetector";
+} from "../../languages/javascript/mountDetector";
 
 suite(
     "Mount Detector",

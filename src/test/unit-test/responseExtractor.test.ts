@@ -1,6 +1,6 @@
 import * as assert from "assert";
-import { detectRoutes } from "../languages/javascript/routeDetector";
-import { extractResponseContract } from "../languages/javascript/responseExtractor";
+import { detectRoutes } from "../../languages/javascript/routeDetector";
+import { extractResponseContract } from "../../languages/javascript/responseExtractor";
 
 suite("Response Extractor", () => {
 

@@ -2,15 +2,15 @@ import * as assert from "assert";
 
 import {
     ApiDiscoveryService
-} from "../core/apiDiscoveryService";
+} from "../../core/apiDiscoveryService";
 
 import {
     SourceFileContent
-} from "../core/sourceFileLoader";
+} from "../../core/sourceFileLoader";
 
 import {
     JavaScriptParser
-} from "../languages/javascript/javascriptParser";
+} from "../../languages/javascript/javascriptParser";
 
 suite(
     "JavaScript Route Composition",

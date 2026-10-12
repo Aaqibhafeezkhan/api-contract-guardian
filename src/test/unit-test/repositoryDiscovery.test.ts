@@ -18,7 +18,7 @@ import {
 
 import {
     discoverSourceFiles
-} from "../core/repositoryDiscovery";
+} from "../../core/repositoryDiscovery";
 
 suite(
     "Repository Discovery",
