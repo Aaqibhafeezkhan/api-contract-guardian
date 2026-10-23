@@ -5,6 +5,10 @@ import {
     detectRoutes
 } from "../../languages/javascript/routeDetector";
 
+import {
+    extractResponseContract
+} from "../../languages/javascript/responseExtractor";
+
 suite("Route Detector", () => {
 
     test("detects Express routes", () => {
@@ -277,6 +281,72 @@ suite("Route Detector", () => {
             assert.strictEqual(
                 result[1].ownerName,
                 "customerRoutes"
+            );
+        }
+    );
+
+    test(
+        "detects routes and response contract for express.Router()",
+        () => {
+
+            const sourceCode = `
+                const router = express.Router();
+
+                router.get("/customers", (req, res) => {
+                    res.json({
+                        id: 1,
+                        name: "Komal"
+                    });
+                });
+            `;
+
+            const result =
+                detectRoutes(
+                    sourceCode,
+                    "server.ts"
+                );
+
+            assert.strictEqual(
+                result.length,
+                1
+            );
+
+            assert.strictEqual(
+                result[0].ownerName,
+                "router"
+            );
+
+            assert.strictEqual(
+                result[0].contract.method,
+                "GET"
+            );
+
+            assert.strictEqual(
+                result[0].contract.path,
+                "/customers"
+            );
+
+            const responseContract =
+                extractResponseContract(
+                    result[0]
+                );
+
+            assert.ok(
+                responseContract
+            );
+
+            assert.deepStrictEqual(
+                responseContract?.fields,
+                [
+                    {
+                        name: "id",
+                        type: "number"
+                    },
+                    {
+                        name: "name",
+                        type: "string"
+                    }
+                ]
             );
         }
     );
