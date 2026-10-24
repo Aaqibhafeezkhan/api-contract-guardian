@@ -545,6 +545,72 @@ These limitations are intentional: Guardian prioritizes reliable, statically sup
 
 ---
 
+
+# Troubleshooting
+
+Use these checks when Guardian does not report an endpoint you expect, or when a reported contract change looks unexpected.
+
+## An endpoint is not detected
+
+Guardian uses static analysis: it reads source code rather than starting your API. It can only report routes that match the patterns its current analyzers recognize.
+
+For JavaScript and TypeScript, start with a straightforward Express route using a literal path and an inline handler:
+
+```typescript
+import express from "express";
+
+const app = express();
+
+app.get("/users/:id", (req, res) => {
+  res.json({ id: req.params.id, name: "Example" });
+});
+```
+
+The path `/users/:id` is a string literal, so the route detector can read it without executing the application. Express routers and supported router mounts can also be composed across files when their relationships are statically resolvable.
+
+Compare that with a path assembled at runtime:
+
+```typescript
+const prefix = "/users";
+
+app.get(`${prefix}/:id`, (req, res) => {
+  res.json({ id: req.params.id });
+});
+```
+
+The second path is a template expression rather than a string literal. The current JavaScript/TypeScript route detector does not resolve that expression, so it may not detect this route. Prefer a literal route path when practical, or treat the result as a limitation of static analysis rather than proof that the endpoint does not exist.
+
+Other things to check:
+
+- Confirm the route uses a supported Express application or router and an HTTP method Guardian recognizes (`get`, `post`, `put`, `patch`, or `delete`).
+- Check whether the handler and route declaration use a pattern the analyzer can inspect. Runtime-generated routes, custom framework conventions, and dynamic imports may not be resolved.
+- For Python, only supported FastAPI and Flask decorator and router/blueprint patterns are analyzed; Python code is not executed.
+- Confirm the route is in the workspace being scanned and is not excluded as a generated or dependency file.
+
+See [Supported API Patterns](#supported-api-patterns) and [Current Limitations](#current-limitations) for the documented scope.
+
+## A reported contract change does not match expectations
+
+Guardian compares the current source at `HEAD` with the Git revision you enter when running **API Contract Guardian: Scan**. Check that the selected revision is the intended baseline and that both revisions are available in the repository.
+
+Then review the finding against the source:
+
+- **Endpoint removed:** verify that the route was statically detectable in both revisions and that its path and HTTP method did not change.
+- **Response field removed or type changed:** inspect the response object in both revisions. Dynamic response objects or values assembled through complex data flow may not be fully inferred.
+- **Unexpectedly different path:** check literal route paths and all supported router mount prefixes. A path may not be composed as expected if a mount or import relationship cannot be resolved.
+- **Consumer warning:** treat it as a potential impact signal. Static analysis cannot guarantee that a consumer will fail at runtime.
+
+Guardian reports findings based on the source patterns it understands; a missing finding does not prove that an endpoint is absent, and a warning does not guarantee a runtime failure.
+
+## Useful references
+
+- [Supported API Patterns](#supported-api-patterns)
+- [Running a Scan](#running-a-scan)
+- [Current Limitations](#current-limitations)
+- [Development and test commands](#development)
+
+---
+
 # Testing
 
 The project includes multiple levels of testing.
