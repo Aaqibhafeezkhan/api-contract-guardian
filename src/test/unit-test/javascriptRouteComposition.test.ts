@@ -231,19 +231,32 @@ suite(
                     2
                 );
 
-                const paths =
+                const routes =
                     result
                         .map(
-                            contract =>
-                                contract.path
+                            contract => ({
+                                method: contract.method,
+                                path: contract.path
+                            })
                         )
-                        .sort();
+                        .sort(
+                            (left, right) =>
+                                left.path.localeCompare(
+                                    right.path
+                                )
+                        );
 
                 assert.deepStrictEqual(
-                    paths,
+                    routes,
                     [
-                        "/admin/customers",
-                        "/api/customers"
+                        {
+                            method: "GET",
+                            path: "/admin/customers"
+                        },
+                        {
+                            method: "GET",
+                            path: "/api/customers"
+                        }
                     ]
                 );
 
